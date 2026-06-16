@@ -34,7 +34,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 
 /* NAV */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-wrap:wrap;gap:10px;}
-.nav-month{font-family:var(--fd);font-size:28px;letter-spacing:3px;}
+.nav-month{font-family:var(--fd);font-size:32px;letter-spacing:3px;}
 .nav-month span{color:var(--or);}
 .nav-arrows{display:flex;gap:6px;}
 .nav-btn{background:var(--bg3);border:1px solid var(--bd);color:var(--tm);width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--fb);}
@@ -53,16 +53,16 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 .cal-wrap{padding:0 20px 20px;}
 .cal-grid{border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--bg2);}
 .cal-hdr{display:grid;grid-template-columns:repeat(7,1fr);background:var(--or);}
-.cal-hdr-cell{padding:10px;text-align:center;font-family:var(--fd);font-size:14px;letter-spacing:2px;color:#fff;}
+.cal-hdr-cell{padding:12px;text-align:center;font-family:var(--fd);font-size:16px;letter-spacing:2px;color:#fff;}
 .cal-body{display:grid;grid-template-columns:repeat(7,1fr);}
-.cal-day{border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);min-height:110px;padding:6px;cursor:pointer;transition:background .15s;position:relative;}
+.cal-day{border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);min-height:140px;padding:8px;cursor:pointer;transition:background .15s;position:relative;}
 .cal-day:nth-child(7n){border-right:none;}
 .cal-day:hover{background:rgba(255,255,255,0.02);}
 .cal-day.other-month{opacity:.3;cursor:default;}
 .cal-day.today{background:rgba(255,68,31,0.06);}
-.day-num{font-family:var(--fm);font-size:12px;font-weight:700;color:var(--tm);margin-bottom:4px;display:flex;align-items:center;gap:5px;}
-.day-num.today-num{background:var(--or);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
-.day-event{display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;margin-bottom:3px;font-size:9px;font-weight:600;cursor:pointer;transition:opacity .15s;border-left:3px solid transparent;}
+.day-num{font-family:var(--fm);font-size:14px;font-weight:700;color:var(--tm);margin-bottom:4px;display:flex;align-items:center;gap:5px;}
+.day-num.today-num{background:var(--or);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.day-event{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:5px;margin-bottom:4px;font-size:10px;font-weight:600;cursor:pointer;transition:opacity .15s;border-left:3px solid transparent;}
 .day-event:hover{opacity:.8;}
 .day-event.t-seasonal{background:var(--gn-d);border-left-color:var(--gn);color:var(--gn);}
 .day-event.t-viral{background:var(--or-d);border-left-color:var(--or);color:var(--or);}
@@ -78,7 +78,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 .ev-status.st-cancelado{background:var(--rd);}
 .day-event .ev-time{font-family:var(--fm);font-size:7px;opacity:.7;}
 
-.ev-dyn{font-size:7px;font-weight:700;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px;margin-left:2px;white-space:nowrap;}
+.ev-dyn{font-size:8px;font-weight:700;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px;margin-left:2px;white-space:nowrap;}
 .day-more{font-size:8px;color:var(--tm);padding:2px 6px;cursor:pointer;}
 
 /* DRILL DOWN MODAL */
@@ -142,17 +142,48 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 @keyframes spin{to{transform:rotate(360deg);}}
 
 /* RESPONSIVE */
-@media(max-width:768px){
-  .cal-day{min-height:70px;padding:3px;}
-  .day-event{font-size:7px;padding:2px 4px;}
-  .day-num{font-size:10px;}
-  .nav-month{font-size:22px;}
-  .dd-modal{max-width:100%;}
+/* Large monitor */
+@media(min-width:1600px){
+  .cal-day{min-height:170px;padding:10px;}
+  .day-event{font-size:11px;padding:5px 10px;margin-bottom:5px;}
+  .day-num{font-size:16px;}
+  .nav-month{font-size:38px;}
+  .cal-hdr-cell{font-size:18px;padding:14px;}
+  .ev-dyn{font-size:9px;}
+  .ev-time{font-size:9px !important;}
+  .day-num.today-num{width:32px;height:32px;font-size:15px;}
 }
+/* Laptop */
+@media(max-width:1280px){
+  .cal-day{min-height:120px;padding:6px;}
+  .day-event{font-size:9px;padding:3px 6px;}
+}
+/* Tablet */
+@media(max-width:768px){
+  .cal-day{min-height:90px;padding:4px;}
+  .day-event{font-size:8px;padding:3px 5px;}
+  .day-num{font-size:11px;}
+  .nav-month{font-size:24px;}
+  .dd-modal{max-width:100%;}
+  .cal-hdr-cell{font-size:12px;padding:8px;}
+  .ev-dyn{font-size:7px;}
+  .legend{padding:0 12px 8px;}
+  .nav{padding:12px;}
+  .cal-wrap{padding:0 12px 12px;}
+}
+/* Mobile */
 @media(max-width:480px){
   .cal-hdr-cell{font-size:10px;padding:6px 2px;}
   .day-event .ev-name{display:none;}
-  .legend{gap:8px;}
+  .day-event .ev-dyn{display:none;}
+  .day-event .ev-time{display:none;}
+  .legend{gap:6px;font-size:8px;}
+  .leg-item{font-size:8px;}
+  .nav-month{font-size:20px;}
+  .cal-day{min-height:65px;padding:3px;}
+  .day-num{font-size:10px;}
+  .nf-btn{font-size:8px;padding:4px 8px;}
+  .nav-btn{width:30px;height:30px;font-size:14px;}
 }
 </style>
 </head>
@@ -163,7 +194,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
     <div class="logo">RAPPI <span>TURBO</span></div>
     <div class="hbadge">📅 CALENDARIO COMMS</div>
   </div>
-  <button class="config-btn" onclick="openConfig()">⚙️ Configurar Sheet</button>
+  
 </header>
 
 <div class="nav">
