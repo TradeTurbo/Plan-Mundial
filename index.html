@@ -298,6 +298,12 @@ let curYear=2026, curMonth=5; // June = 5 (0-indexed)
 let events=[], comms=[];
 let activeFilter='all';
 let sheetConfig={id:'1p43-yQQWTgeJw1wfocOfLeEj_XxaPeUV7yiy5g5kf4c', evSheet:'Eventos', cmSheet:'Comms'};
+// ═══ SEGUNDO SHEET (Agenda Comercial) ═══
+// Cambiar URL: redesplegar Apps Script en otro Sheet
+// Cambiar hoja: modificar AGENDA_SHEET_NAME
+var AGENDA_SCRIPT_URL='https://script.google.com/macros/s/AKfycbyFVxlXF32Rxs3hNPPZZag6iNaLeiKdaErjCvsZu94yoPSfW55cfxQH3Xh5vWZbgYWr/exec';
+var AGENDA_SHEET_NAME='Calendario HVU MERCH V2';
+var agendaComms=[];
 
 // ═══ CONFIG MODAL ═══
 function openConfig(){
@@ -361,6 +367,53 @@ function setStatus(type, msg){
   document.getElementById('sbar').innerHTML='<div class="sbar-dot '+dot+'"></div> '+msg;
 }
 
+function parseAgenda(raw){
+  var data=raw.data;var result=[];
+  if(!data||data.length<12)return result;
+  var franjaRows={'3':{s:'07:00',e:'12:00'},'5':{s:'12:00',e:'16:00'},'7':{s:'16:00',e:'19:00'},'9':{s:'19:00',e:'22:00'},'11':{s:'22:00',e:'07:00'}};
+  var title=(data[0][1]||data[0][0]||'').toString().toLowerCase();
+  var startMonth=5;
+  var mNames=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  for(var mi=0;mi<mNames.length;mi++){if(title.indexOf(mNames[mi])>-1){startMonth=mi;break;}}
+  var colDates={},colEvents={},curM=startMonth,curY=2026,prevN=99;
+  for(var j=1;j<data[2].length;j++){
+    var hdr=(data[2][j]||'').toString().trim();if(!hdr)continue;
+    var pts=hdr.split(' ');var dn=parseInt(pts[pts.length-1]);if(isNaN(dn))continue;
+    if(dn<prevN&&prevN>20){curM++;if(curM>11){curM=0;curY++;}}
+    prevN=dn;
+    colDates[j]=curY+'-'+String(curM+1).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
+    var ev=(data[0][j]||'').toString().trim();
+    if(ev.toLowerCase().indexOf('agenda')>-1)ev='';
+    colEvents[j]=ev;
+  }
+  var fKeys=Object.keys(franjaRows);
+  for(var fi=0;fi<fKeys.length;fi++){
+    var ri=parseInt(fKeys[fi]);var fr=franjaRows[fKeys[fi]];
+    if(ri>=data.length)continue;
+    for(var j=1;j<data[ri].length;j++){
+      var cell=(data[ri][j]||'').toString().trim();if(!cell)continue;
+      var dt=colDates[j];if(!dt)continue;var ev=colEvents[j]||'';
+      var lines=cell.split('\n');
+      for(var li=0;li<lines.length;li++){
+        var ln=lines[li].replace(/^[•\-\s]+/,'').trim();if(!ln)continue;
+        var cm=ln.match(/\[([^\]]+)\]/);
+        var canal=cm?cm[1]:'';
+        var content=ln.replace(/\[[^\]]+\]\s*/,'').trim();
+        result.push({fecha:dt,hora_inicio:fr.s,hora_fin:fr.e,evento:ev,canal:canal,descripcion:content,source:'agenda'});
+      }
+    }
+  }
+  return result;
+}
+async function loadAgenda(){
+  if(!AGENDA_SCRIPT_URL)return 0;
+  try{
+    var url=AGENDA_SCRIPT_URL+'?sheet='+encodeURIComponent(AGENDA_SHEET_NAME);
+    var res=await fetch(url);if(!res.ok)throw new Error('Agenda error');
+    var raw=await res.json();agendaComms=parseAgenda(raw);return agendaComms.length;
+  }catch(e){console.warn('Agenda:',e);agendaComms=[];return 0;}
+}
+
 async function loadData(){
   if(!sheetConfig.id){
     setStatus('err','⚠️ Sin Sheet configurado — clic en ⚙️ Configurar Sheet');
@@ -382,7 +435,8 @@ async function loadData(){
     var cmCSV=await cmRes.text();
     comms=parseCSV(cmCSV);
 
-    setStatus('ok','✓ Datos cargados — '+events.length+' eventos, '+comms.length+' comunicaciones');
+    var ac=await loadAgenda();
+    setStatus('ok','✓ Datos cargados — '+events.length+' eventos, '+comms.length+' comms'+(ac?', '+ac+' agenda':''));
     renderCalendar();
   }catch(e){
     setStatus('err','❌ Error: '+e.message+' — verifica que el Sheet esté publicado');
@@ -405,10 +459,9 @@ function getEventsForDate(dateStr){
 }
 
 function getCommsForDate(dateStr){
-  return comms.filter(function(cm){
-    var cmDate=normalizeDate(cm.fecha||cm.date||'');
-    return cmDate===dateStr;
-  });
+  var s1=comms.filter(function(cm){return normalizeDate(cm.fecha||cm.date||'')===dateStr;});
+  var s2=agendaComms.filter(function(cm){return cm.fecha===dateStr;});
+  return s1.concat(s2);
 }
 
 function normalizeDate(d){
@@ -592,12 +645,13 @@ function openDrillDown(dateString,year,month,day){
     HOURS.forEach(function(h){
       var hourStr=String(h).padStart(2,'0');
       var hourComms=dayComms.filter(function(cm){
-        var cmStart=cm['hora inicio']||cm['hora_inicio']||cm.hora||cm.hour||'';
-        var cmEnd=cm['hora fin']||cm['hora_fin']||cm['hora final']||'';
+        var cmStart=cm['hora inicio']||cm['hora_inicio']||cm.hora_inicio||cm.hora||cm.hour||'';
+        var cmEnd=cm['hora fin']||cm['hora_fin']||cm['hora final']||cm.hora_fin||'';
         if(!cmStart)return false;
         var startH=parseInt(cmStart.split(':')[0]);
         if(!cmEnd) return startH===h;
         var endH=parseInt(cmEnd.split(':')[0]);
+        if(endH<=startH)endH=24;
         return h>=startH && h<endH;
       });
 
@@ -617,12 +671,14 @@ function openDrillDown(dateString,year,month,day){
       hourComms.forEach(function(cm){
         var evento=cm.evento||cm.event||cm['evento relacionado']||'';
         var tipo='';
+        if(cm.source==='agenda'){tipo='BAU';}
+        else{
         // Try to match event type
         var matchEv=events.find(function(ev){
           var evName=ev['nombre evento']||ev['nombre_evento']||ev.nombre||ev.evento||'';
           return evName.toLowerCase()===evento.toLowerCase();
         });
-        if(matchEv)tipo=normalizeType(matchEv.tipo||matchEv.type||'');
+        if(matchEv)tipo=normalizeType(matchEv.tipo||matchEv.type||'');}
 
         var comm=document.createElement('div');
         comm.className='dd-comm '+(tipo?typeClass(tipo):'t-bau');
@@ -635,7 +691,7 @@ function openDrillDown(dateString,year,month,day){
         evLabel.textContent=(timeRange?timeRange+' · ':'')+evento;
         comm.appendChild(evLabel);
 
-        var desc=cm.descuento||cm.discount||'';
+        var desc=cm.descuento||cm.discount||cm.descripcion||'';
         var producto=cm.producto||cm.product||'';
         var marca=cm.marca||cm.brand||'';
         if(desc||producto){
