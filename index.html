@@ -375,11 +375,12 @@ function parseAgenda(raw){
   var startMonth=5;
   var mNames=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   for(var mi=0;mi<mNames.length;mi++){if(title.indexOf(mNames[mi])>-1){startMonth=mi;break;}}
-  var colDates={},colEvents={},curM=startMonth,curY=2026,prevN=99;
+  var colDates={},colEvents={},curM=startMonth,curY=2026,prevN=0,monthChanged=false;
   for(var j=1;j<data[2].length;j++){
     var hdr=(data[2][j]||'').toString().trim();if(!hdr)continue;
     var pts=hdr.split(' ');var dn=parseInt(pts[pts.length-1]);if(isNaN(dn))continue;
-    if(dn<prevN&&prevN>20){curM++;if(curM>11){curM=0;curY++;}}
+    // Cambio de mes: el número baja Y el anterior era fin de mes (>=28)
+    if(dn<prevN&&prevN>=28){curM++;if(curM>11){curM=0;curY++;}}
     prevN=dn;
     colDates[j]=curY+'-'+String(curM+1).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
     var ev=(data[0][j]||'').toString().trim();
