@@ -599,12 +599,7 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
       cell.appendChild(evDiv);
     });
 
-    if(dayEvents.length>maxShow){
-      var more=document.createElement('div');
-      more.className='day-more';
-      more.textContent='+'+(dayEvents.length-maxShow)+' más';
-      cell.appendChild(more);
-    }
+
 
     // Agenda comms summary for this day
     var dayAgenda=agendaComms.filter(function(ac){return ac.fecha===dateString;});
@@ -615,8 +610,7 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
         if(key&&!uniqueEvents[key])uniqueEvents[key]=true;
       });
       var agendaNames=Object.keys(uniqueEvents);
-      var maxAgenda=2;
-      agendaNames.slice(0,maxAgenda).forEach(function(name){
+      agendaNames.forEach(function(name){
         var agDiv=document.createElement('div');
         agDiv.className='day-event t-bau';
         agDiv.style.cssText='opacity:0.7;border-left-color:var(--yw);background:rgba(255,184,0,0.08);';
@@ -635,12 +629,7 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
         agDiv.appendChild(badge);
         cell.appendChild(agDiv);
       });
-      if(agendaNames.length>maxAgenda){
-        var moreAg=document.createElement('div');
-        moreAg.className='day-more';
-        moreAg.textContent='+' +(agendaNames.length-maxAgenda)+' merch';
-        cell.appendChild(moreAg);
-      }
+
     }
 
     cell.onclick=function(){openDrillDown(dateString,year,month,day);};
