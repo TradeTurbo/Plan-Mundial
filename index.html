@@ -225,6 +225,8 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
   <div class="leg-item"><div class="leg-line" style="background:var(--bl);"></div> Futuro</div>
   <div class="leg-item"><div class="leg-line" style="background:var(--gy);"></div> Pasado</div>
   <div class="leg-item"><div class="leg-line" style="background:var(--rd);"></div> Cancelado</div>
+  <div style="width:1px;height:14px;background:var(--bd);margin:0 4px;"></div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--yw);"></div> MERCH (Agenda)</div>
 </div>
 
 <div class="sbar" id="sbar">
@@ -602,6 +604,43 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
       more.className='day-more';
       more.textContent='+'+(dayEvents.length-maxShow)+' más';
       cell.appendChild(more);
+    }
+
+    // Agenda comms summary for this day
+    var dayAgenda=agendaComms.filter(function(ac){return ac.fecha===dateString;});
+    if(dayAgenda.length){
+      var uniqueEvents={};
+      dayAgenda.forEach(function(ac){
+        var key=ac.evento||ac.descripcion||'';
+        if(key&&!uniqueEvents[key])uniqueEvents[key]=true;
+      });
+      var agendaNames=Object.keys(uniqueEvents);
+      var maxAgenda=2;
+      agendaNames.slice(0,maxAgenda).forEach(function(name){
+        var agDiv=document.createElement('div');
+        agDiv.className='day-event t-bau';
+        agDiv.style.cssText='opacity:0.7;border-left-color:var(--yw);background:rgba(255,184,0,0.08);';
+        var dot=document.createElement('div');
+        dot.className='ev-status';
+        dot.style.background='var(--yw)';
+        agDiv.appendChild(dot);
+        var nm=document.createElement('span');
+        nm.className='ev-name';
+        nm.textContent=name;
+        agDiv.appendChild(nm);
+        var badge=document.createElement('span');
+        badge.className='ev-dyn';
+        badge.style.cssText='background:rgba(255,184,0,0.15);color:#FFB800;';
+        badge.textContent='MERCH';
+        agDiv.appendChild(badge);
+        cell.appendChild(agDiv);
+      });
+      if(agendaNames.length>maxAgenda){
+        var moreAg=document.createElement('div');
+        moreAg.className='day-more';
+        moreAg.textContent='+' +(agendaNames.length-maxAgenda)+' merch';
+        cell.appendChild(moreAg);
+      }
     }
 
     cell.onclick=function(){openDrillDown(dateString,year,month,day);};
