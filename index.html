@@ -71,6 +71,8 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 /* status indicators */
 .day-event.s-pasado{opacity:.45;}
 .day-event.s-cancelado{opacity:.35;text-decoration:line-through;}
+.day-event.s-pendiente{opacity:.6;border-style:dashed;}
+.ev-status.st-pendiente{background:var(--yw);}
 .day-event .ev-status{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 .ev-status.st-encurso{background:var(--gn);}
 .ev-status.st-futuro{background:var(--bl);}
@@ -80,6 +82,8 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 
 .ev-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .ev-dyn{font-size:8px;flex-shrink:0;font-weight:700;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px;margin-left:2px;white-space:nowrap;}
+
+.day-theme{font-size:7px;font-weight:700;color:var(--yw);letter-spacing:0.5px;margin-bottom:4px;text-transform:uppercase;line-height:1.2;background:rgba(255,184,0,0.1);border:1px solid rgba(255,184,0,0.25);border-radius:4px;padding:2px 6px;display:inline-block;}
 .day-more{font-size:8px;color:var(--tm);padding:2px 6px;cursor:pointer;}
 
 /* DRILL DOWN MODAL */
@@ -98,9 +102,9 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 .dd-ev-chip.t-bau{background:var(--bl-d);color:var(--bl);border:1px solid rgba(77,166,255,.3);}
 .dd-ev-chip.t-negociacion{background:var(--pr-d);color:var(--pr);border:1px solid rgba(155,109,255,.3);}
 .dd-grid{max-height:60vh;overflow-y:auto;}
-.dd-row{display:grid;grid-template-columns:60px 1fr;border-bottom:1px solid var(--bd);min-height:44px;}
+.dd-row{display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid var(--bd);min-height:44px;}
 .dd-row:last-child{border-bottom:none;}
-.dd-time{padding:8px 10px;font-family:var(--fm);font-size:10px;color:var(--td);border-right:1px solid var(--bd);display:flex;align-items:flex-start;padding-top:10px;}
+.dd-time{padding:10px 8px;font-family:var(--fm);font-size:10px;color:var(--td);border-right:1px solid var(--bd);display:flex;flex-direction:column;align-items:flex-start;min-width:80px;}
 .dd-cell{padding:4px 8px;display:flex;flex-direction:column;gap:3px;}
 .dd-comm{border-radius:5px;padding:6px 8px;border-left:3px solid transparent;font-size:10px;}
 .dd-comm.t-seasonal{background:var(--gn-d);border-left-color:var(--gn);}
@@ -225,8 +229,9 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
   <div class="leg-item"><div class="leg-line" style="background:var(--bl);"></div> Futuro</div>
   <div class="leg-item"><div class="leg-line" style="background:var(--gy);"></div> Pasado</div>
   <div class="leg-item"><div class="leg-line" style="background:var(--rd);"></div> Cancelado</div>
+  <div class="leg-item"><div class="leg-line" style="background:var(--yw);border-style:dashed;"></div> Pendiente</div>
   <div style="width:1px;height:14px;background:var(--bd);margin:0 4px;"></div>
-  <div class="leg-item"><div class="leg-dot" style="background:var(--yw);"></div> MERCH (Agenda)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--yw);"></div> HVU (High Value Users)</div>
 </div>
 
 <div class="sbar" id="sbar">
@@ -293,8 +298,17 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 const MONTHS=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 const DAYS_SHORT=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
 const TYPE_CLASS={'Seasonal':'t-seasonal','Viral':'t-viral','BAU':'t-bau','Negociacion Especial':'t-negociacion','Negociación Especial':'t-negociacion'};
-const STATUS_CLASS={'En curso':'st-encurso','Futuro':'st-futuro','Pasado':'st-pasado','Cancelado':'st-cancelado'};
+const STATUS_CLASS={'En curso':'st-encurso','Futuro':'st-futuro','Pasado':'st-pasado','Cancelado':'st-cancelado','Pendiente':'st-pendiente'};
 const HOURS=[7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+const DAY_THEMES={
+  1:'Despensa',
+  2:'Fruver',
+  3:'Cuidado del hogar, personal & mascotas',
+  4:'Carnes, pescados & mariscos',
+  5:'Dulcería, botanas & cervezas',
+  6:'Dulcería, botanas & cervezas',
+  0:'Despensa, botanas & cervezas'
+};
 
 let curYear=2026, curMonth=5; // June = 5 (0-indexed)
 let events=[], comms=[];
@@ -369,6 +383,14 @@ function setStatus(type, msg){
   document.getElementById('sbar').innerHTML='<div class="sbar-dot '+dot+'"></div> '+msg;
 }
 
+function normalizeEvento(name){
+  if(!name)return name;
+  var lower=name.toLowerCase();
+  if(lower.indexOf('chedraui')>-1)return'Chedraui Selecto';
+  if(lower.indexOf('fruver')>-1)return'Fruver HVU';
+  if(lower.indexOf('farma')>-1)return'Turbo Farma';
+  return name;
+}
 function parseAgenda(raw){
   var data=raw.data;var result=[];
   if(!data||data.length<12)return result;
@@ -387,7 +409,7 @@ function parseAgenda(raw){
     colDates[j]=curY+'-'+String(curM+1).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
     var ev=(data[0][j]||'').toString().trim();
     if(ev.toLowerCase().indexOf('agenda')>-1)ev='';
-    colEvents[j]=ev;
+    colEvents[j]=normalizeEvento(ev);
   }
   var fKeys=Object.keys(franjaRows);
   for(var fi=0;fi<fKeys.length;fi++){
@@ -402,7 +424,7 @@ function parseAgenda(raw){
         var cm=ln.match(/\[([^\]]+)\]/);
         var canal=cm?cm[1]:'';
         var content=ln.replace(/\[[^\]]+\]\s*/,'').trim();
-        result.push({fecha:dt,hora_inicio:fr.s,hora_fin:fr.e,evento:ev,canal:canal,descripcion:content,source:'agenda'});
+        result.push({fecha:dt,hora_inicio:fr.s,hora_fin:fr.e,evento:normalizeEvento(ev),canal:canal,descripcion:content,source:'agenda'});
       }
     }
   }
@@ -497,6 +519,7 @@ function statusClass(s){
   if(lower.includes('futuro'))return'st-futuro';
   if(lower.includes('pasado'))return'st-pasado';
   if(lower.includes('cancel'))return'st-cancelado';
+  if(lower.includes('pendiente'))return'st-pendiente';
   return'st-futuro';
 }
 function statusEventClass(s){
@@ -504,6 +527,7 @@ function statusEventClass(s){
   var lower=s.toLowerCase().trim();
   if(lower.includes('pasado'))return's-pasado';
   if(lower.includes('cancel'))return's-cancelado';
+  if(lower.includes('pendiente'))return's-pendiente';
   return'';
 }
 
@@ -559,6 +583,17 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
   numDiv.className='day-num'+(isToday?' today-num':'');
   numDiv.textContent=day;
   cell.appendChild(numDiv);
+
+  if(!isOther){
+    var dow=new Date(year,month,day).getDay();
+    var theme=DAY_THEMES[dow]||'';
+    if(theme){
+      var themeDiv=document.createElement('div');
+      themeDiv.className='day-theme';
+      themeDiv.textContent=theme;
+      cell.appendChild(themeDiv);
+    }
+  }
 
   if(!isOther&&dateString){
     var dayEvents=getEventsForDate(dateString);
@@ -625,7 +660,7 @@ function createDayCell(day,isOther,dateString,year,month,isToday){
         var badge=document.createElement('span');
         badge.className='ev-dyn';
         badge.style.cssText='background:rgba(255,184,0,0.15);color:#FFB800;';
-        badge.textContent='MERCH';
+        badge.textContent='HVU';
         agDiv.appendChild(badge);
         cell.appendChild(agDiv);
       });
