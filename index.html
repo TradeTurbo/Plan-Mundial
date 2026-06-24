@@ -115,6 +115,13 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;di
 .dd-comm-desc{font-weight:600;color:var(--tx);}
 .dd-comm-meta{font-size:9px;color:var(--tm);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;}
 .dd-comm-tag{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-weight:600;}
+
+/* FRANJAS DRILL-DOWN */
+.dd-franja-label{padding:10px 12px;min-width:90px;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;border-right:1px solid var(--bd);background:var(--bg3);}
+.dd-fl-name{font-size:10px;font-weight:700;color:var(--or);letter-spacing:1px;}
+.dd-fl-range{font-size:8px;color:var(--td);font-family:var(--fm);}
+.dd-cell-grid{display:flex;flex-wrap:wrap;gap:6px;padding:8px;align-items:flex-start;}
+.dd-comm{border-radius:5px;padding:6px 8px;border-left:3px solid transparent;font-size:10px;flex:1 1 200px;max-width:320px;min-width:180px;}
 .dd-empty{text-align:center;padding:30px;color:var(--td);font-size:12px;}
 
 /* CONFIG MODAL */
@@ -698,99 +705,99 @@ function openDrillDown(dateString,year,month,day){
     evContainer.innerHTML='<div style="font-size:10px;color:var(--td);">Sin eventos programados</div>';
   }
 
-  // Comms for this day
+  // Comms for this day - by franjas, horizontal layout
   var dayComms=getCommsForDate(dateString);
   var grid=document.getElementById('dd-grid');
   grid.innerHTML='';
 
+  var DD_FRANJAS=[
+    {label:'MAÑANA',range:'07:00 – 12:00',startH:7,endH:12},
+    {label:'LUNCH',range:'12:00 – 16:00',startH:12,endH:16},
+    {label:'POSTRES',range:'16:00 – 19:00',startH:16,endH:19},
+    {label:'COMIDA',range:'19:00 – 22:00',startH:19,endH:22},
+    {label:'LATE NIGHT',range:'22:00 – 23:59',startH:22,endH:24}
+  ];
+
   if(!dayComms.length){
     grid.innerHTML='<div class="dd-empty">Sin comunicaciones programadas para este día</div>';
   }else{
-    HOURS.forEach(function(h){
-      var hourStr=String(h).padStart(2,'0');
-      var hourComms=dayComms.filter(function(cm){
+    DD_FRANJAS.forEach(function(franja){
+      var fComms=dayComms.filter(function(cm){
         var cmStart=cm['hora inicio']||cm['hora_inicio']||cm.hora_inicio||cm.hora||cm.hour||'';
         var cmEnd=cm['hora fin']||cm['hora_fin']||cm['hora final']||cm.hora_fin||'';
         if(!cmStart)return false;
-        var startH=parseInt(cmStart.split(':')[0]);
-        if(!cmEnd) return startH===h;
-        var endH=parseInt(cmEnd.split(':')[0]);
-        if(endH<=startH)endH=24;
-        return h>=startH && h<endH;
+        var sH=parseInt(cmStart.split(':')[0]);
+        var eH=cmEnd?parseInt(cmEnd.split(':')[0]):sH+1;
+        if(eH<=sH)eH=24;
+        return sH<franja.endH&&eH>franja.startH;
       });
-
-      if(!hourComms.length)return;
+      if(!fComms.length)return;
 
       var row=document.createElement('div');
       row.className='dd-row';
+      row.style.gridTemplateColumns='90px 1fr';
 
-      var timeCell=document.createElement('div');
-      timeCell.className='dd-time';
-      timeCell.textContent=hourStr+':00';
-      row.appendChild(timeCell);
+      var lbl=document.createElement('div');
+      lbl.className='dd-franja-label';
+      lbl.innerHTML='<div class="dd-fl-name">'+franja.label+'</div><div class="dd-fl-range">'+franja.range+'</div>';
+      row.appendChild(lbl);
 
       var cellDiv=document.createElement('div');
-      cellDiv.className='dd-cell';
+      cellDiv.className='dd-cell-grid';
 
-      hourComms.forEach(function(cm){
+      fComms.forEach(function(cm){
         var evento=cm.evento||cm.event||cm['evento relacionado']||'';
         var tipo='';
         if(cm.source==='agenda'){tipo='BAU';}
         else{
-        // Try to match event type
-        var matchEv=events.find(function(ev){
-          var evName=ev['nombre evento']||ev['nombre_evento']||ev.nombre||ev.evento||'';
-          return evName.toLowerCase()===evento.toLowerCase();
-        });
-        if(matchEv)tipo=normalizeType(matchEv.tipo||matchEv.type||'');}
-
+          var matchEv=events.find(function(ev){
+            var evName=ev['nombre evento']||ev['nombre_evento']||ev.nombre||ev.evento||'';
+            return evName.toLowerCase()===evento.toLowerCase();
+          });
+          if(matchEv)tipo=normalizeType(matchEv.tipo||matchEv.type||'');
+        }
         var comm=document.createElement('div');
         comm.className='dd-comm '+(tipo?typeClass(tipo):'t-bau');
 
-        var cmStartTime=cm['hora inicio']||cm['hora_inicio']||cm.hora||'';
-        var cmEndTime=cm['hora fin']||cm['hora_fin']||cm['hora final']||'';
-        var timeRange=cmStartTime?(cmStartTime.substring(0,5)+(cmEndTime?' – '+cmEndTime.substring(0,5):'')):'';
         var evLabel=document.createElement('div');
         evLabel.className='dd-comm-ev';
-        evLabel.textContent=(timeRange?timeRange+' · ':'')+evento;
+        evLabel.textContent=evento||(cm.source==='agenda'?'Agenda HVU':'');
+        if(cm.source==='agenda'){
+          var srcB=document.createElement('span');
+          srcB.style.cssText='font-size:7px;background:rgba(255,184,0,0.2);color:#FFB800;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px;';
+          srcB.textContent='HVU';
+          evLabel.appendChild(srcB);
+        }
         comm.appendChild(evLabel);
 
         var desc=cm.descuento||cm.discount||cm.descripcion||'';
         var producto=cm.producto||cm.product||'';
         var marca=cm.marca||cm.brand||'';
         if(desc||producto){
-          var descDiv=document.createElement('div');
-          descDiv.className='dd-comm-desc';
-          descDiv.textContent=[desc,producto,marca].filter(Boolean).join(' · ');
-          comm.appendChild(descDiv);
+          var d2=document.createElement('div');
+          d2.className='dd-comm-desc';
+          d2.textContent=[desc,producto,marca].filter(Boolean).join(' · ');
+          comm.appendChild(d2);
         }
-
         var canal=cm.canal||cm.channel||'';
-        var copy=cm.copy||'';
-        if(canal||copy){
+        if(canal){
           var meta=document.createElement('div');
           meta.className='dd-comm-meta';
-          if(canal){
-            canal.split(',').forEach(function(ch){
-              var tag=document.createElement('span');
-              tag.className='dd-comm-tag';
-              tag.textContent=ch.trim();
-              meta.appendChild(tag);
-            });
-          }
+          canal.split(',').forEach(function(ch){
+            var tag=document.createElement('span');
+            tag.className='dd-comm-tag';
+            tag.textContent=ch.trim();
+            meta.appendChild(tag);
+          });
           comm.appendChild(meta);
         }
-
         cellDiv.appendChild(comm);
       });
-
       row.appendChild(cellDiv);
       grid.appendChild(row);
     });
-
-    // If no hour matched, show all comms without hour grouping
     if(!grid.children.length){
-      grid.innerHTML='<div class="dd-empty">Las comunicaciones no tienen hora asignada</div>';
+      grid.innerHTML='<div class="dd-empty">Sin comunicaciones en las franjas</div>';
     }
   }
 
